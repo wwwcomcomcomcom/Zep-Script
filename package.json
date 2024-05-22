@@ -5,7 +5,8 @@
     "build": "zep-script build",
     "pack": "zep-script pack",
     "archive": "zep-script archive",
-    "deploy": "zep-script publish"
+    "deploy": "zep-script publish",
+    "dev":"zep-script build && zep-script archive"
   },
   "devDependencies": {
     "@babel/cli": "^7.18.6",
