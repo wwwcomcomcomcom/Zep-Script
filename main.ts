@@ -47,8 +47,7 @@ ScriptApp.onJoinPlayer.Add((player)=>{
   }
 
   if(isGaming){
-    player.hidden = true;
-    player.showCenterLabel("관전중이므로, 다른사람에게 보이지 않습니다.",ColorType.YELLOW,ColorType.BLACK,0,10000);
+    player.showCenterLabel("관전중이므로, 다음 게임에 참여하세요.",ColorType.YELLOW,ColorType.BLACK,0,10000);
   }
 
   player.sendMessage(`안녕 ${player.name} 안녕`);
@@ -121,12 +120,28 @@ function startGame(){
     player.tileY = 57;
     player.moveSpeed = 0;
     setTimeout(()=>{
-      player.moveSpeed = 80;
+      if(player.tag.role === "술래"){
+        ScriptApp.runLater(()=>{
+          player.showCenterLabel("술래입니다.",ColorType.RED,ColorType.BLACK,0,10000);
+          player.showCenterLabel("10초후에 움직일 수 있습니다.",ColorType.RED,ColorType.BLACK,100,10000);
+          player.moveSpeed = 100;
+        },10000);
+      }else{
+        player.moveSpeed = 80;
+      }
     },1000);
     player.tag.isGaming = true;
   });
-  
-  ScriptApp.players[Math.floor(Math.random()*ScriptApp.playerCount)].tag.isGaming = false;
+
+  //도망자로 초기화
+  ScriptApp.players.forEach((player)=>{
+    player.tag.role = "도망자";
+  });
+
+  //술래 정하기
+  ScriptApp.players[Math.floor(Math.random()*ScriptApp.playerCount)].tag.role = "술래";
+
+
 }
 
 
