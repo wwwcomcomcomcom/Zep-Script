@@ -37,8 +37,6 @@ ScriptApp.onStart.Add(()=>{
     // return;
   }
 
-  startGame();
-
 });
 ScriptApp.onJoinPlayer.Add((player)=>{
 
@@ -50,15 +48,12 @@ ScriptApp.onJoinPlayer.Add((player)=>{
     player.showCenterLabel("관전중이므로, 다음 게임에 참여하세요.",ColorType.YELLOW,ColorType.BLACK,0,10000);
   }
 
-  player.sendMessage(`안녕 ${player.name} 안녕`);
+  player.sendMessage(`환영합니다 ${player.name} 님!`);
 
 });
 
 
-
 ScriptApp.addOnKeyDown(81, function (player) {
-
-  announce(`${player.tileX},${player.tileY}`);
 
   if(ScriptApp.players.length < 2){
     player.sendMessage("플레이어가 부족합니다.");
@@ -76,6 +71,22 @@ ScriptApp.addOnKeyDown(81, function (player) {
     };
   });
 });
+
+
+ScriptApp.onUnitAttacked.Add((attacker, x,y,target)=>{
+  if(attacker.tag.role === "술래"){
+    if(target.tag.role === "도망자"){
+      announce(`${attacker.name}이 ${target.name}을 잡았습니다.`);
+      setSpectator(target);
+      updateGamePlayers();
+
+      if(gamingPlayer.filter((player)=>player.tag.role === "도망자").length === 0){
+        announce("모든 도망자가 잡혔습니다.");
+        startGame();
+      }
+    }
+  }
+})
 
 
 
@@ -106,6 +117,14 @@ function getPlayerDistance(player1:ScriptPlayer,player2: ScriptPlayer): number {
 function updateGamePlayers(){
   gamingPlayer = ScriptApp.players.filter((player)=>player.tag.isGaming);
 }
+
+function setSpectator(player:ScriptPlayer){
+  player.tag.isGaming = false;
+  player.tag.role = "관전자";
+  player.showCenterLabel("관전중입니다.",ColorType.YELLOW,ColorType.BLACK,0,10000);
+  player.title = "관전자";
+}
+
 function startGame(){
   isGaming = true;
   ScriptApp.players.forEach((player)=>{
@@ -141,15 +160,80 @@ function startGame(){
   //술래 정하기
   ScriptApp.players[Math.floor(Math.random()*ScriptApp.playerCount)].tag.role = "술래";
 
+}
 
+function endGame(){
+  isGaming = false;
+  ScriptApp.players.forEach((player)=>{
+    player.tag.isGaming = false;
+  });
+  gamingPlayer = [];
+  ScriptApp.players.forEach((player)=>{
+    player.spawnAt(57,57,player.dir);
+  });
+  ScriptApp.showCenterLabel("술래잡기 게임이 종료되었습니다.");
+  ScriptApp.forceDestroy();
 }
 
 
+const FULL_GAME_TIME = 60 * 2;
+let playtime = 0;
+let tickSecond = 1;
+ScriptApp.onUpdate.Add((dt)=>{
+  if(tickSecond > 0){
+    tickSecond -= dt;
+  }else{
+    tickSecond = 1;
+    playtime++;
+    if(playtime >= FULL_GAME_TIME){
+      endGame();
+    }else{
+      let minutes = Math.floor((FULL_GAME_TIME - playtime) / 60);
+      let seconds = Math.floor((FULL_GAME_TIME - playtime) % 60);
+      let minutes_string = minutes < 10 ? "0" + String(minutes) : String(minutes);
+      let seconds_string = seconds < 10 ? "0" + String(seconds) : String(seconds);
 
+      showTimerLabel("main", "⏰ Remaining time : ",`${minutes_string} : ${seconds_string}`);
+    }
+  }
+});
 
+function showTimerLabel(key, text1, text2) {
+  const topGap = -2; 
 
+  const labelPercentWidth = 20;
+  const labelDisplayTime = 300000;
 
+  const parentStyle = `
+  display: flex; 
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  `;
 
+  const firstRowStyle = `
+  font-size: 18px;
+  font-weight: 700; 
+  color: white;`;
+
+  const highlightSpanStyle = `
+  font-size: 18px;
+  font-weight: 700; 
+  color: #FFEB3A;`;
+
+  const customLabelOption = {
+    key: key,
+    borderRadius: '12px',
+    fontOpacity: false,
+    padding: '8px 24px',
+  }
+
+  let htmlStr = `<span style="${parentStyle}">
+    <span style="${firstRowStyle}">${text1}</span>
+    <span style="${highlightSpanStyle}">${text2}</span>
+  </span>`;
+  ScriptApp.showCustomLabel(htmlStr, 0xffffff, 0x27262e, topGap, labelPercentWidth, 0.64, labelDisplayTime, customLabelOption);
+}
 
 
 
